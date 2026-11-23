@@ -1,0 +1,40 @@
+# PostgreSQL 16 + pgvector, and Neo4j 5 (community).  Start with:  docker compose up -d
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ceb-postgres
+    environment:
+      POSTGRES_USER: ceb_user
+      POSTGRES_PASSWORD: ceb_password
+      POSTGRES_DB: college_events
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db:/db:ro            # lets you run:  docker compose exec postgres psql ... -f /db/demo/03_queries.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ceb_user -d college_events"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: ceb-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/ceb_neo4j_password
+    ports:
+      - "7474:7474"            # Neo4j Browser  http://localhost:7474
+      - "7687:7687"            # Bolt
+    volumes:
+      - neo4jdata:/data
+      - ./db:/db:ro
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p ceb_neo4j_password 'RETURN 1' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+
+volumes:
+  pgdata:
+  neo4jdata:
